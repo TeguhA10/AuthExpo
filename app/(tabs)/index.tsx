@@ -1,70 +1,50 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, TouchableOpacity, Text, SafeAreaView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { logoutApp, Token, getTokenFromStorage } from '@/services/authServices';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store/store';
+import { jwtDecode } from 'jwt-decode';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const [getToken, setGetToken] = useState<Token | null>(null);
+
+  useEffect(() => {
+    const fetchTokenAndDecode = async () => {
+      try {
+        const token = await getTokenFromStorage();
+        if (token) {
+          const decoded: Token = jwtDecode(token);
+          setGetToken(decoded);
+        }
+      } catch (error) {
+        console.error('Failed to retrieve or decode token:', error);
+      }
+    };
+
+    fetchTokenAndDecode();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutApp());
+      router.replace('/(auth)');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView className='p-4 flex-1 justify-center bg-black'>
+      <View >
+        <Text className='text-green-500 text-xl'>Selamat datang <Text className='text-white'>{getToken?.username || 'User'}</Text></Text>
+      </View>
+      <TouchableOpacity onPress={() => handleLogout()} >
+        <Text className='text-white text-xl bg-blue-500 text-center py-2 rounded-lg my-4'>Logout</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
